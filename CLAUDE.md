@@ -27,7 +27,7 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 
 - `/api/geocode?q={query}` — City search via Open-Meteo geocoding API.
 - `/api/weather?lat={lat}&lon={lon}` — Weather data via Open-Meteo forecast API (°F, mph).
-- `/api/outfit` — POST `{ city, temperature, conditions, style, tempSensitivity, ownedItems }`. Calls Claude Haiku (`claude-haiku-4-5-20251001`) with a personal-stylist prompt and returns `{ suggestion }`. Requires `ANTHROPIC_API_KEY`.
+- `/api/outfit` — POST `{ city, temperature, conditions, style, tempSensitivity, ownedItems }`. Calls Google Gemini (`gemini-flash-latest`) via the REST API with a personal-stylist prompt and returns `{ suggestion }`. Requires `GEMINI_API_KEY`.
 
 ### Components / hooks
 
@@ -56,7 +56,7 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
-- `ANTHROPIC_API_KEY` — server-only; used by `/api/outfit` to call Claude
+- `GEMINI_API_KEY` — server-only; used by `/api/outfit` to call Google Gemini
 
 ### Data model
 

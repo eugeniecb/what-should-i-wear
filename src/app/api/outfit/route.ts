@@ -1,9 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const MODEL = "claude-haiku-4-5-20251001";
+// Gemini model selection — `gemini-flash-latest` is fast, free-tier
+// eligible, and auto-tracks the latest flash release.
+const MODEL = "gemini-flash-latest";
+const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 interface OutfitRequest {
   city: string;
@@ -34,11 +36,19 @@ ${itemList}
 Be specific, practical, and brief. Format: one sentence per clothing layer, then a one-line style note.`;
 }
 
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }>;
+  error?: { message?: string };
+}
+
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured" },
+      { error: "GEMINI_API_KEY is not configured" },
       { status: 500 },
     );
   }
@@ -62,26 +72,49 @@ export async function POST(req: Request) {
     );
   }
 
-  const client = new Anthropic({ apiKey });
-
   try {
-    const message = await client.messages.create({
-      model: MODEL,
-      max_tokens: 400,
-      messages: [{ role: "user", content: buildPrompt(body) }],
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: buildPrompt(body) }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 400,
+        },
+      }),
     });
 
-    const suggestion = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("\n")
+    const json = (await res.json()) as GeminiResponse;
+
+    if (!res.ok) {
+      const message = json.error?.message ?? `HTTP ${res.status}`;
+      return NextResponse.json(
+        { error: `Gemini API error: ${message}` },
+        { status: 502 },
+      );
+    }
+
+    const suggestion = (json.candidates?.[0]?.content?.parts ?? [])
+      .map((p) => p.text ?? "")
+      .join("")
       .trim();
+
+    if (!suggestion) {
+      return NextResponse.json(
+        { error: "No suggestion returned from Gemini" },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({ suggestion });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: `Claude API error: ${msg}` },
+      { error: `Gemini API error: ${msg}` },
       { status: 502 },
     );
   }
