@@ -110,7 +110,7 @@ export default function WeatherCard({
 
   return (
     <div
-      className={`relative rounded-2xl border border-gray-200/60 p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700/60 ${TONE_CLASSES[tone]}`}
+      className={`relative flex h-full flex-col rounded-2xl border border-gray-200/60 p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700/60 ${TONE_CLASSES[tone]}`}
     >
       <button
         onClick={onRemove}

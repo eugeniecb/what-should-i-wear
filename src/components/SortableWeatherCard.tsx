@@ -30,7 +30,13 @@ export default function SortableWeatherCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="h-full"
+      {...attributes}
+      {...listeners}
+    >
       <WeatherCard
         city={city}
         onRemove={onRemove}
