@@ -87,10 +87,10 @@ function targetsFor(perceived: number, flags: WeatherFlags): Targets {
   const needOuterwear = perceived < 55 || flags.rainy || flags.snowy;
 
   let base: number;
-  if (perceived >= 80) base = 1;
-  else if (perceived >= 65) base = 2;
-  else if (perceived >= 50) base = 3;
-  else if (perceived >= 35) base = 3;
+  if (perceived >= 70) base = 1;
+  else if (perceived >= 58) base = 2;
+  else if (perceived >= 45) base = 3;
+  else if (perceived >= 32) base = 3;
   else base = 4;
 
   let outerwear: number;
