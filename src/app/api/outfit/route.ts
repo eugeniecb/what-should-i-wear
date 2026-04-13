@@ -27,13 +27,30 @@ function buildPrompt(req: OutfitRequest): string {
     ? req.ownedItems.map((i) => `- ${i}`).join("\n")
     : "(no items in closet yet)";
 
-  return `You are a personal stylist. The weather in ${req.city} is ${Math.round(
-    req.temperature,
-  )}°F with ${req.conditions}.
-The user describes their style as: ${req.style.replace("_", " ")}. They run ${sensitivityPhrase(req.tempSensitivity)}.
-Suggest a complete outfit using ONLY items from this list (these are items they own):
+  return `You are a personal stylist. Recommend a complete outfit for today using ONLY items from the user's closet below.
+
+Weather: ${Math.round(req.temperature)}°F, ${req.conditions} in ${req.city}.
+Style: ${req.style.replace("_", " ")}. User runs ${sensitivityPhrase(req.tempSensitivity)}.
+
+Closet:
 ${itemList}
-Be specific, practical, and brief. Format: one sentence per clothing layer, then a one-line style note.`;
+
+Rules:
+- Output 2–4 short lines, one per clothing layer (e.g. "Jeans with a long sleeve shirt.").
+- Then one final line starting with "Note:" — a one-sentence style tip.
+- No preamble, no headers, no bullet points, no markdown, no bold, no asterisks. Plain text only.
+- Each line must be under 15 words.`;
+}
+
+// Strip common markdown artifacts. Gemini is instructed not to emit any,
+// but we guard against it leaking through anyway.
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1") // **bold**
+    .replace(/\*(.+?)\*/g, "$1") // *italic*
+    .replace(/^#+\s*/gm, "") // # headers
+    .replace(/^[-*]\s+/gm, "") // - / * bullets
+    .trim();
 }
 
 interface GeminiResponse {
@@ -102,10 +119,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const suggestion = (json.candidates?.[0]?.content?.parts ?? [])
-      .map((p) => p.text ?? "")
-      .join("")
-      .trim();
+    const suggestion = stripMarkdown(
+      (json.candidates?.[0]?.content?.parts ?? [])
+        .map((p) => p.text ?? "")
+        .join(""),
+    );
 
     if (!suggestion) {
       return NextResponse.json(
