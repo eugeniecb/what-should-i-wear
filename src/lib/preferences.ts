@@ -31,10 +31,21 @@ export const SENSITIVITY_OPTIONS: {
 ];
 
 export const DEFAULT_PREFERENCES = {
-  style: "casual" as StylePreference,
+  style_weekday: "casual" as StylePreference,
+  style_weekend: "casual" as StylePreference,
   temp_sensitivity: "normal" as TempSensitivity,
   temperature_unit: "fahrenheit" as TemperatureUnit,
 };
+
+/** Returns the style preference that applies on a given local date. */
+export function styleForDate(
+  prefs: { style_weekday: StylePreference; style_weekend: StylePreference },
+  date: Date = new Date(),
+): StylePreference {
+  const day = date.getDay();
+  const isWeekend = day === 0 || day === 6;
+  return isWeekend ? prefs.style_weekend : prefs.style_weekday;
+}
 
 export function styleLabel(style: StylePreference): string {
   return STYLE_OPTIONS.find((o) => o.value === style)?.label ?? style;

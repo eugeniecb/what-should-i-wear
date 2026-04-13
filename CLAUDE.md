@@ -97,7 +97,8 @@ Unique `(user_id, category, name)`. Index on `(user_id, category)`. RLS scoped t
 | column             | type        | notes                                                                    |
 |--------------------|-------------|--------------------------------------------------------------------------|
 | `user_id`          | `text` PK   | Clerk user ID                                                            |
-| `style`            | `text`      | check: `casual`/`business_casual`/`streetwear`/`athletic`/`formal`; default `casual` |
+| `style_weekday`    | `text`      | check: `casual`/`business_casual`/`streetwear`/`athletic`/`formal`; default `casual`. Applied Mon–Fri. |
+| `style_weekend`    | `text`      | same check / default. Applied Sat–Sun.                                   |
 | `temp_sensitivity` | `text`      | check: `runs_cold`/`normal`/`runs_warm`; default `normal`                |
 | `temperature_unit` | `text`      | check: `fahrenheit`/`celsius`; default `fahrenheit`                      |
 | `updated_at`       | `timestamptz` | trigger-maintained on update                                          |

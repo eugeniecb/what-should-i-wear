@@ -37,7 +37,8 @@ export type TempSensitivity = "runs_cold" | "normal" | "runs_warm";
 export type TemperatureUnit = "fahrenheit" | "celsius";
 
 export interface UserPreferences {
-  style: StylePreference;
+  style_weekday: StylePreference;
+  style_weekend: StylePreference;
   temp_sensitivity: TempSensitivity;
   temperature_unit: TemperatureUnit;
 }

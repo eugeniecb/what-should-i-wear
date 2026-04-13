@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { City, UserPreferences, WeatherData } from "@/types";
 import { formatTemp, getWeatherDescription } from "@/lib/weather-utils";
-import { styleLabel } from "@/lib/preferences";
+import { styleForDate, styleLabel } from "@/lib/preferences";
 import {
   OutfitLineSlot,
   OutfitResult,
@@ -89,17 +89,19 @@ export default function WeatherCard({
     };
   }, [city]);
 
+  const todayStyle = styleForDate(preferences);
+
   const outfit = useMemo(() => {
     if (!weather) return null;
     return suggestOutfit({
       temperature: weather.temperature,
       weatherCode: weather.weatherCode,
       windSpeed: weather.windSpeed,
-      style: preferences.style,
+      style: todayStyle,
       tempSensitivity: preferences.temp_sensitivity,
       ownedItemNames: ownedItems,
     });
-  }, [weather, ownedItems, preferences.style, preferences.temp_sensitivity]);
+  }, [weather, ownedItems, todayStyle, preferences.temp_sensitivity]);
 
   const { label, icon } = weather
     ? getWeatherDescription(weather.weatherCode)
@@ -201,7 +203,7 @@ export default function WeatherCard({
           {outfit && (
             <OutfitBlock
               outfit={outfit}
-              style={styleLabel(preferences.style)}
+              style={styleLabel(todayStyle)}
               emptyCloset={ownedItems.length === 0}
             />
           )}

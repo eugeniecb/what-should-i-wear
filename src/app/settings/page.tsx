@@ -35,7 +35,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from("user_preferences")
-        .select("style, temp_sensitivity")
+        .select("style_weekday, style_weekend, temp_sensitivity, temperature_unit")
         .maybeSingle();
 
       if (cancelled) return;
@@ -59,7 +59,8 @@ export default function SettingsPage() {
     const { error } = await supabase.from("user_preferences").upsert(
       {
         user_id: user.id,
-        style: next.style,
+        style_weekday: next.style_weekday,
+        style_weekend: next.style_weekend,
         temp_sensitivity: next.temp_sensitivity,
       },
       { onConflict: "user_id" },
@@ -110,21 +111,54 @@ export default function SettingsPage() {
               Preferred style
             </h2>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              The overall vibe suggestions should aim for.
+              Pick a different vibe for weekdays vs. weekends. Suggestions use
+              today&apos;s setting.
             </p>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {STYLE_OPTIONS.map((opt) => (
-                <RadioTile
-                  key={opt.value}
-                  name="style"
-                  value={opt.value}
-                  label={opt.label}
-                  checked={prefs.style === opt.value}
-                  onChange={() =>
-                    save({ ...prefs, style: opt.value as StylePreference })
-                  }
-                />
-              ))}
+
+            <div className="mt-5">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+                Weekdays · Mon–Fri
+              </h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {STYLE_OPTIONS.map((opt) => (
+                  <RadioTile
+                    key={opt.value}
+                    name="style_weekday"
+                    value={opt.value}
+                    label={opt.label}
+                    checked={prefs.style_weekday === opt.value}
+                    onChange={() =>
+                      save({
+                        ...prefs,
+                        style_weekday: opt.value as StylePreference,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+                Weekends · Sat–Sun
+              </h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {STYLE_OPTIONS.map((opt) => (
+                  <RadioTile
+                    key={opt.value}
+                    name="style_weekend"
+                    value={opt.value}
+                    label={opt.label}
+                    checked={prefs.style_weekend === opt.value}
+                    onChange={() =>
+                      save({
+                        ...prefs,
+                        style_weekend: opt.value as StylePreference,
+                      })
+                    }
+                  />
+                ))}
+              </div>
             </div>
           </section>
 

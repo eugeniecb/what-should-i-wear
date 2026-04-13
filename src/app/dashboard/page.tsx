@@ -65,7 +65,7 @@ export default function DashboardPage() {
           .eq("owned", true),
         supabase
           .from("user_preferences")
-          .select("style, temp_sensitivity, temperature_unit")
+          .select("style_weekday, style_weekend, temp_sensitivity, temperature_unit")
           .maybeSingle(),
       ]);
 
