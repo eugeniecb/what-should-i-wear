@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48">
+  <style>
+    .cloud { fill: #111827; }
+    @media (prefers-color-scheme: dark) {
+      .cloud { fill: #f3f4f6; }
+    }
+  </style>
+  <g class="cloud">
+    <circle cx="20" cy="28" r="13"/>
+    <circle cx="34" cy="18" r="15"/>
+    <circle cx="48" cy="28" r="12"/>
+    <rect x="12" y="28" width="40" height="13" rx="6.5"/>
+  </g>
+</svg>
