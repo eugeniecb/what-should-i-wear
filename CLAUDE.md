@@ -27,16 +27,18 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 
 - `/api/geocode?q={query}` — City search via Open-Meteo geocoding API.
 - `/api/weather?lat={lat}&lon={lon}` — Weather data via Open-Meteo forecast API (°F, mph).
-- `/api/outfit` — POST `{ city, temperature, conditions, style, tempSensitivity, ownedItems }`. Calls Google Gemini (`gemini-flash-latest`) via the REST API with a personal-stylist prompt and returns `{ suggestion }`. Requires `GEMINI_API_KEY`.
+
+Outfit suggestions are fully client-side and rule-based — there is no LLM call.
 
 ### Components / hooks
 
-- `src/components/WeatherCard.tsx` — Fetches weather, then calls `/api/outfit` with the user's owned items + preferences. Card background tint is driven by weather code (sunny/cloudy/rainy/snowy/stormy/foggy).
+- `src/components/WeatherCard.tsx` — Fetches weather, then synchronously runs `suggestOutfit()` with the user's owned items + preferences. Card background tint is driven by weather code (sunny/cloudy/rainy/snowy/stormy/foggy).
 - `src/components/CitySearch.tsx` — Debounced (300ms) autocomplete against `/api/geocode`.
 - `src/components/Nav.tsx` — Top-nav links (Dashboard/Closet/Settings), only rendered when signed in.
 - `src/lib/useSupabase.ts` — Builds a Supabase client that forwards the Clerk session token as `accessToken`.
-- `src/lib/useEnsureUserInitialized.ts` — On first signed-in mount, seeds the default closet catalog and ensures a `user_preferences` row exists. Call this from any authed page.
-- `src/lib/closet-seed.ts` — Default catalog + category labels/order.
+- `src/lib/useEnsureUserInitialized.ts` — On first signed-in mount, seeds the closet from `CATALOG` and ensures a `user_preferences` row exists. Call this from any authed page.
+- `src/lib/closet-catalog.ts` — Canonical catalog of clothing items with `warmth` (1–5), `rainOk`, `snowOk`, and allowed `styles`. The closet UI renders only catalog items; users cannot add custom items. Adding/removing items here changes the experience for all users.
+- `src/lib/outfit-engine.ts` — Pure `suggestOutfit()` function. Applies temp-sensitivity offset, picks one item per slot scored against a target warmth, filters by style and weather (rain/snow), and conditionally adds accessories (umbrella when rainy; gloves/scarf when freezing; +hat/beanie when freezing & windy; sunglasses or baseball cap when sunny & warm). Returns `{ lines, note, missing }` and gracefully handles unfillable slots by surfacing them in `note`.
 - `src/lib/preferences.ts` — Style + sensitivity option lists and defaults.
 - `src/lib/weather-utils.ts` — WMO code → label/icon map (`getWeatherDescription`).
 
@@ -56,7 +58,6 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
-- `GEMINI_API_KEY` — server-only; used by `/api/outfit` to call Google Gemini
 
 ### Data model
 

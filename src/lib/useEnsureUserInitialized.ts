@@ -3,9 +3,8 @@
 import { useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSupabase } from "@/lib/useSupabase";
-import { CLOSET_SEED } from "@/lib/closet-seed";
+import { CATALOG } from "@/lib/closet-catalog";
 import { DEFAULT_PREFERENCES } from "@/lib/preferences";
-import type { ClothingCategory } from "@/types";
 
 /**
  * On a signed-in user's first mount of the session, ensure that their
@@ -35,16 +34,12 @@ export function useEnsureUserInitialized() {
       }
 
       if ((count ?? 0) === 0) {
-        const rows = (
-          Object.entries(CLOSET_SEED) as [ClothingCategory, readonly string[]][]
-        ).flatMap(([category, names]) =>
-          names.map((name) => ({
-            user_id: user.id,
-            category,
-            name,
-            owned: true,
-          })),
-        );
+        const rows = CATALOG.map((item) => ({
+          user_id: user.id,
+          category: item.category,
+          name: item.name,
+          owned: true,
+        }));
         await supabase.from("closet_items").insert(rows);
       }
 

@@ -1,18 +1,29 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSupabase } from "@/lib/useSupabase";
 import { useEnsureUserInitialized } from "@/lib/useEnsureUserInitialized";
-import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/closet-seed";
-import type { ClosetItem, ClothingCategory } from "@/types";
+import {
+  CATALOG_BY_CATEGORY,
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+  CatalogItem,
+} from "@/lib/closet-catalog";
+import type { ClothingCategory } from "@/types";
+
+interface ClosetRow {
+  id: string;
+  name: string;
+  owned: boolean;
+}
 
 export default function ClosetPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   const supabase = useSupabase();
   useEnsureUserInitialized();
 
-  const [items, setItems] = useState<ClosetItem[]>([]);
+  const [rowsByName, setRowsByName] = useState<Record<string, ClosetRow>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,23 +35,25 @@ export default function ClosetPage() {
     (async () => {
       if (!isSignedIn) {
         if (cancelled) return;
-        setItems([]);
+        setRowsByName({});
         setLoading(false);
         return;
       }
 
       const { data, error } = await supabase
         .from("closet_items")
-        .select("id, category, name, owned")
-        .order("category", { ascending: true })
-        .order("name", { ascending: true });
+        .select("id, name, owned");
 
       if (cancelled) return;
       if (error) {
         setError(error.message);
       } else {
         setError(null);
-        setItems((data ?? []) as ClosetItem[]);
+        const next: Record<string, ClosetRow> = {};
+        for (const row of data ?? []) {
+          next[row.name as string] = row as ClosetRow;
+        }
+        setRowsByName(next);
       }
       setLoading(false);
     })();
@@ -50,69 +63,28 @@ export default function ClosetPage() {
     };
   }, [isLoaded, isSignedIn, supabase]);
 
-  async function toggleOwned(item: ClosetItem) {
-    const nextOwned = !item.owned;
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, owned: nextOwned } : i)),
-    );
+  async function toggle(item: CatalogItem) {
+    const existing = rowsByName[item.name];
+    if (!existing) return; // seed should have created it
+    const nextOwned = !existing.owned;
+    setRowsByName((prev) => ({
+      ...prev,
+      [item.name]: { ...existing, owned: nextOwned },
+    }));
     const { error } = await supabase
       .from("closet_items")
       .update({ owned: nextOwned })
-      .eq("id", item.id);
+      .eq("id", existing.id);
     if (error) {
       setError(error.message);
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, owned: item.owned } : i)),
-      );
+      setRowsByName((prev) => ({ ...prev, [item.name]: existing }));
     }
   }
 
-  async function deleteItem(item: ClosetItem) {
-    const prev = items;
-    setItems((current) => current.filter((i) => i.id !== item.id));
-    const { error } = await supabase
-      .from("closet_items")
-      .delete()
-      .eq("id", item.id);
-    if (error) {
-      setError(error.message);
-      setItems(prev);
-    }
-  }
-
-  async function addItem(category: ClothingCategory, name: string) {
-    if (!user) return;
-    const trimmed = name.trim().toLowerCase();
-    if (!trimmed) return;
-    if (items.some((i) => i.category === category && i.name === trimmed)) {
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("closet_items")
-      .insert({
-        user_id: user.id,
-        category,
-        name: trimmed,
-        owned: true,
-      })
-      .select("id, category, name, owned")
-      .single();
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    if (data) {
-      setItems((prev) =>
-        [...prev, data as ClosetItem].sort((a, b) =>
-          a.category === b.category
-            ? a.name.localeCompare(b.name)
-            : a.category.localeCompare(b.category),
-        ),
-      );
-    }
-  }
+  const ownedCount = useMemo(
+    () => Object.values(rowsByName).filter((r) => r.owned).length,
+    [rowsByName],
+  );
 
   if (!isLoaded) return null;
 
@@ -124,10 +96,6 @@ export default function ClosetPage() {
     );
   }
 
-  const grouped = Object.fromEntries(
-    CATEGORY_ORDER.map((c) => [c, items.filter((i) => i.category === c)]),
-  ) as Record<ClothingCategory, ClosetItem[]>;
-
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8">
       <header className="mb-8">
@@ -138,6 +106,11 @@ export default function ClosetPage() {
           Uncheck anything you don&apos;t own. Only checked items are used in
           outfit suggestions.
         </p>
+        {!loading && (
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+            {ownedCount} item{ownedCount === 1 ? "" : "s"} in your closet
+          </p>
+        )}
       </header>
 
       {error && (
@@ -156,10 +129,9 @@ export default function ClosetPage() {
             <CategorySection
               key={category}
               category={category}
-              items={grouped[category]}
-              onToggle={toggleOwned}
-              onDelete={deleteItem}
-              onAdd={(name) => addItem(category, name)}
+              items={CATALOG_BY_CATEGORY[category]}
+              rowsByName={rowsByName}
+              onToggle={toggle}
             />
           ))}
         </div>
@@ -171,25 +143,14 @@ export default function ClosetPage() {
 function CategorySection({
   category,
   items,
+  rowsByName,
   onToggle,
-  onDelete,
-  onAdd,
 }: {
   category: ClothingCategory;
-  items: ClosetItem[];
-  onToggle: (item: ClosetItem) => void;
-  onDelete: (item: ClosetItem) => void;
-  onAdd: (name: string) => void;
+  items: CatalogItem[];
+  rowsByName: Record<string, ClosetRow>;
+  onToggle: (item: CatalogItem) => void;
 }) {
-  const [draft, setDraft] = useState("");
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!draft.trim()) return;
-    onAdd(draft);
-    setDraft("");
-  }
-
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <h2 className="font-serif text-xl font-semibold">
@@ -197,55 +158,32 @@ function CategorySection({
       </h2>
 
       <ul className="mt-3 space-y-1.5">
-        {items.length === 0 && (
-          <li className="text-sm text-gray-500">No items yet.</li>
-        )}
-        {items.map((item) => (
-          <li key={item.id} className="group flex items-center gap-2">
-            <label className="flex flex-1 cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={item.owned}
-                onChange={() => onToggle(item)}
-                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
-              />
-              <span
-                className={
-                  item.owned
-                    ? ""
-                    : "text-gray-400 line-through dark:text-gray-600"
-                }
-              >
-                {item.name}
-              </span>
-            </label>
-            <button
-              onClick={() => onDelete(item)}
-              className="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 opacity-0 group-hover:opacity-100 dark:hover:bg-gray-800"
-              aria-label={`Remove ${item.name}`}
-              title="Remove from closet"
-            >
-              ×
-            </button>
-          </li>
-        ))}
+        {items.map((item) => {
+          const row = rowsByName[item.name];
+          const owned = row?.owned ?? false;
+          return (
+            <li key={item.name}>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={owned}
+                  onChange={() => onToggle(item)}
+                  className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                />
+                <span
+                  className={
+                    owned
+                      ? ""
+                      : "text-gray-400 line-through dark:text-gray-600"
+                  }
+                >
+                  {item.name}
+                </span>
+              </label>
+            </li>
+          );
+        })}
       </ul>
-
-      <form onSubmit={submit} className="mt-4 flex gap-2">
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Add an item…"
-          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-950"
-        />
-        <button
-          type="submit"
-          className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-        >
-          Add
-        </button>
-      </form>
     </section>
   );
 }

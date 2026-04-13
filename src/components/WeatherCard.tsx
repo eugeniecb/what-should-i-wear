@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { City, UserPreferences, WeatherData } from "@/types";
 import { getWeatherDescription } from "@/lib/weather-utils";
 import { styleLabel } from "@/lib/preferences";
+import { suggestOutfit } from "@/lib/outfit-engine";
 
 interface WeatherCardProps {
   city: City;
@@ -58,10 +60,6 @@ export default function WeatherCard({
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState(false);
 
-  const [outfit, setOutfit] = useState<string | null>(null);
-  const [outfitLoading, setOutfitLoading] = useState(false);
-  const [outfitError, setOutfitError] = useState<string | null>(null);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -87,51 +85,17 @@ export default function WeatherCard({
     };
   }, [city]);
 
-  useEffect(() => {
-    if (!weather || ownedItems.length === 0) return;
-    let cancelled = false;
-
-    (async () => {
-      setOutfitLoading(true);
-      setOutfitError(null);
-      try {
-        const res = await fetch("/api/outfit", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            city: city.name,
-            temperature: weather.temperature,
-            conditions: getWeatherDescription(weather.weatherCode).label,
-            style: preferences.style,
-            tempSensitivity: preferences.temp_sensitivity,
-            ownedItems,
-          }),
-        });
-        const json = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setOutfitError(json.error ?? "Failed to get outfit suggestion");
-        } else {
-          setOutfit(json.suggestion);
-        }
-      } catch {
-        if (cancelled) return;
-        setOutfitError("Failed to get outfit suggestion");
-      } finally {
-        if (!cancelled) setOutfitLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    weather,
-    city.name,
-    ownedItems,
-    preferences.style,
-    preferences.temp_sensitivity,
-  ]);
+  const outfit = useMemo(() => {
+    if (!weather) return null;
+    return suggestOutfit({
+      temperature: weather.temperature,
+      weatherCode: weather.weatherCode,
+      windSpeed: weather.windSpeed,
+      style: preferences.style,
+      tempSensitivity: preferences.temp_sensitivity,
+      ownedItemNames: ownedItems,
+    });
+  }, [weather, ownedItems, preferences.style, preferences.temp_sensitivity]);
 
   const { label, icon } = weather
     ? getWeatherDescription(weather.weatherCode)
@@ -221,13 +185,13 @@ export default function WeatherCard({
             </div>
           </div>
 
-          <OutfitBlock
-            loading={outfitLoading}
-            error={outfitError}
-            outfit={outfit}
-            style={styleLabel(preferences.style)}
-            emptyCloset={ownedItems.length === 0}
-          />
+          {outfit && (
+            <OutfitBlock
+              outfit={outfit}
+              style={styleLabel(preferences.style)}
+              emptyCloset={ownedItems.length === 0}
+            />
+          )}
         </div>
       )}
     </div>
@@ -235,15 +199,11 @@ export default function WeatherCard({
 }
 
 function OutfitBlock({
-  loading,
-  error,
   outfit,
   style,
   emptyCloset,
 }: {
-  loading: boolean;
-  error: string | null;
-  outfit: string | null;
+  outfit: { lines: string[]; note: string };
   style: string;
   emptyCloset: boolean;
 }) {
@@ -251,32 +211,13 @@ function OutfitBlock({
     return (
       <div className="rounded-lg bg-white/70 px-3 py-2 text-sm text-gray-700 dark:bg-black/30 dark:text-gray-200">
         👕 Add items to your{" "}
-        <a href="/closet" className="underline underline-offset-2">
+        <Link href="/closet" className="underline underline-offset-2">
           closet
-        </a>{" "}
+        </Link>{" "}
         to get an outfit suggestion.
       </div>
     );
   }
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm text-gray-600 dark:bg-black/30 dark:text-gray-300">
-        <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-        Styling your outfit…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-200">
-        {error}
-      </div>
-    );
-  }
-
-  if (!outfit) return null;
 
   return (
     <div className="rounded-lg bg-white/70 px-3 py-3 text-sm text-gray-800 shadow-inner dark:bg-black/30 dark:text-gray-100">
@@ -284,7 +225,14 @@ function OutfitBlock({
         <span>👕</span>
         <span>{style} outfit</span>
       </div>
-      <p className="whitespace-pre-wrap leading-relaxed">{outfit}</p>
+      <div className="space-y-0.5 leading-relaxed">
+        {outfit.lines.map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+      </div>
+      <p className="mt-2 text-xs italic text-gray-600 dark:text-gray-400">
+        {outfit.note}
+      </p>
     </div>
   );
 }
