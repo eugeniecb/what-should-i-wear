@@ -8,6 +8,7 @@ export interface City {
 
 export interface SavedCity extends City {
   id: string;
+  position: number;
 }
 
 export type ClothingCategory =

@@ -18,7 +18,7 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 ### Routes
 
 - `/` — Landing page with sign-in/sign-up CTA. Signed-in users are redirected to `/dashboard`.
-- `/dashboard` — Saved-cities view with per-card weather + AI outfit suggestion.
+- `/dashboard` — Saved-cities view with per-card weather + outfit suggestion. Cards are drag-reorderable (powered by `@dnd-kit`); the order is persisted via the `position` column on `saved_cities`.
 - `/closet` — Checklist of clothing items grouped by category; auto-saves on toggle; supports add/remove of custom items.
 - `/settings` — Style preference + temperature sensitivity, auto-saved.
 - `/sign-in`, `/sign-up` — Clerk auth pages.
@@ -73,9 +73,10 @@ Outfit suggestions are fully client-side and rule-based — there is no LLM call
 | `latitude`  | `double precision` |                                                  |
 | `longitude` | `double precision` |                                                  |
 | `created_at`| `timestamptz`      | `default now()`                                  |
+| `position`  | `integer`          | sort key for the dashboard (lower = higher); updated on drag |
 
 - Unique constraint `(user_id, latitude, longitude)` — enforces no-duplicate-location-per-user.
-- Index on `(user_id, created_at desc)` for the default list query.
+- Indexes on `(user_id, created_at desc)` and `(user_id, position)`.
 - **RLS enabled.** Four policies (select/insert/update/delete) all use `(select auth.jwt() ->> 'sub') = user_id` so the Clerk user sees only their own rows.
 
 **`public.closet_items`** — one row per (user, clothing item).

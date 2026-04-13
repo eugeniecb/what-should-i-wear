@@ -2,9 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import { City, SavedCity, UserPreferences } from "@/types";
 import CitySearch from "@/components/CitySearch";
-import WeatherCard from "@/components/WeatherCard";
+import SortableWeatherCard from "@/components/SortableWeatherCard";
 import { useSupabase } from "@/lib/useSupabase";
 import { useEnsureUserInitialized } from "@/lib/useEnsureUserInitialized";
 import { DEFAULT_PREFERENCES } from "@/lib/preferences";
@@ -21,6 +34,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Don't trigger drag from a click — let the remove button work.
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -33,11 +53,12 @@ export default function DashboardPage() {
         setLoading(false);
         return;
       }
+
       const [citiesRes, closetRes, prefsRes] = await Promise.all([
         supabase
           .from("saved_cities")
-          .select("id, name, country, admin1, latitude, longitude")
-          .order("created_at", { ascending: false }),
+          .select("id, name, country, admin1, latitude, longitude, position")
+          .order("position", { ascending: true }),
         supabase
           .from("closet_items")
           .select("name, owned")
@@ -83,6 +104,12 @@ export default function DashboardPage() {
       return;
     }
 
+    // Place new cities at the top: one less than the current minimum.
+    const newPosition =
+      cities.length > 0
+        ? Math.min(...cities.map((c) => c.position)) - 1
+        : 1;
+
     const { data, error } = await supabase
       .from("saved_cities")
       .insert({
@@ -92,8 +119,9 @@ export default function DashboardPage() {
         admin1: city.admin1 ?? null,
         latitude: city.latitude,
         longitude: city.longitude,
+        position: newPosition,
       })
-      .select("id, name, country, admin1, latitude, longitude")
+      .select("id, name, country, admin1, latitude, longitude, position")
       .single();
 
     if (error) {
@@ -115,6 +143,38 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = cities.findIndex((c) => c.id === active.id);
+    const newIndex = cities.findIndex((c) => c.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const prev = cities;
+    const reordered = arrayMove(cities, oldIndex, newIndex).map((c, i) => ({
+      ...c,
+      position: i + 1,
+    }));
+    setCities(reordered);
+
+    // Persist: write each row's new position. Small lists so a parallel
+    // batch is fine; rolls back to the previous order if any update fails.
+    const results = await Promise.all(
+      reordered.map((c) =>
+        supabase
+          .from("saved_cities")
+          .update({ position: c.position })
+          .eq("id", c.id),
+      ),
+    );
+    const firstFailure = results.find((r) => r.error);
+    if (firstFailure?.error) {
+      setError(firstFailure.error.message);
+      setCities(prev);
+    }
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8">
       <header className="mb-8">
@@ -122,7 +182,8 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Weather and outfit suggestions for your saved cities.
+          Weather and outfit suggestions for your saved cities. Drag to
+          reorder.
         </p>
       </header>
 
@@ -155,17 +216,28 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {cities.map((city) => (
-              <WeatherCard
-                key={city.id}
-                city={city}
-                onRemove={() => removeCity(city.id)}
-                ownedItems={ownedItems}
-                preferences={preferences}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={cities.map((c) => c.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                {cities.map((city) => (
+                  <SortableWeatherCard
+                    key={city.id}
+                    city={city}
+                    onRemove={() => removeCity(city.id)}
+                    ownedItems={ownedItems}
+                    preferences={preferences}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </>
       )}
     </div>
