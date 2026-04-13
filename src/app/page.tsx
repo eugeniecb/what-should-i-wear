@@ -28,12 +28,12 @@ export default function LandingPage() {
 
       <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
         <SignUpButton mode="modal">
-          <button className="rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
+          <button className="cursor-pointer rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-md dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
             Get started
           </button>
         </SignUpButton>
         <SignInButton mode="modal">
-          <button className="rounded-full border border-gray-300 px-6 py-3 text-sm font-medium text-gray-900 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-800">
+          <button className="cursor-pointer rounded-full border border-gray-300 px-6 py-3 text-sm font-medium text-gray-900 transition hover:-translate-y-0.5 hover:border-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-800">
             Sign in
           </button>
         </SignInButton>

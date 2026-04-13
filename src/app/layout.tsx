@@ -55,8 +55,16 @@ export default function RootLayout({
             <div className="flex items-center gap-3">
               <Nav />
               <Show when="signed-out">
-                <SignInButton />
-                <SignUpButton />
+                <SignInButton mode="modal">
+                  <button className="cursor-pointer rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500 dark:hover:bg-gray-800">
+                    Sign in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="cursor-pointer rounded-full bg-gray-900 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
+                    Sign up
+                  </button>
+                </SignUpButton>
               </Show>
               <Show when="signed-in">
                 <UserButton />
