@@ -34,7 +34,7 @@ function toneFromCode(code: number): Tone {
 
 const TONE_CLASSES: Record<Tone, string> = {
   sunny:
-    "bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950/40 dark:to-orange-900/20",
+    "bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900/15 dark:to-yellow-800/10",
   cloudy:
     "bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900/60 dark:to-gray-800/40",
   rainy:
