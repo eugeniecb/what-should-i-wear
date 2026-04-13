@@ -6,6 +6,10 @@ export interface City {
   admin1?: string; // state/region
 }
 
+export interface SavedCity extends City {
+  id: string;
+}
+
 export interface WeatherData {
   city: City;
   temperature: number;
