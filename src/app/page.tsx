@@ -11,7 +11,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.replace("/dashboard");
+      router.replace("/today");
     }
   }, [isLoaded, isSignedIn, router]);
 

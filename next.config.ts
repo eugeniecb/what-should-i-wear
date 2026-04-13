@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      // Old route, kept so existing bookmarks land on the renamed page.
+      { source: "/dashboard", destination: "/today", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

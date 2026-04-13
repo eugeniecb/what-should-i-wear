@@ -22,7 +22,7 @@ import { useSupabase } from "@/lib/useSupabase";
 import { useEnsureUserInitialized } from "@/lib/useEnsureUserInitialized";
 import { DEFAULT_PREFERENCES } from "@/lib/preferences";
 
-export default function DashboardPage() {
+export default function TodayPage() {
   const { user, isLoaded, isSignedIn } = useUser();
   const supabase = useSupabase();
   useEnsureUserInitialized();

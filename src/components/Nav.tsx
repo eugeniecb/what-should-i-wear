@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 const LINKS = [
-  { href: "/dashboard", label: "Today" },
+  { href: "/today", label: "Today" },
   { href: "/closet", label: "Closet" },
   { href: "/settings", label: "Settings" },
 ];

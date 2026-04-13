@@ -17,8 +17,8 @@ This is a Next.js 16 (App Router) weather-and-wardrobe app using React 19, TypeS
 
 ### Routes
 
-- `/` — Landing page with sign-in/sign-up CTA. Signed-in users are redirected to `/dashboard`.
-- `/dashboard` — Saved-cities view with per-card weather + outfit suggestion. Cards are drag-reorderable (powered by `@dnd-kit`); the order is persisted via the `position` column on `saved_cities`.
+- `/` — Landing page with sign-in/sign-up CTA. Signed-in users are redirected to `/today`.
+- `/today` — Saved-cities view with per-card weather + outfit suggestion. Cards are drag-reorderable (powered by `@dnd-kit`); the order is persisted via the `position` column on `saved_cities`. The legacy `/dashboard` URL 308-redirects here via `next.config.ts`.
 - `/closet` — Checklist of clothing items grouped by category; auto-saves on toggle; supports add/remove of custom items.
 - `/settings` — Style preference + temperature sensitivity, auto-saved.
 - `/sign-in`, `/sign-up` — Clerk auth pages.
