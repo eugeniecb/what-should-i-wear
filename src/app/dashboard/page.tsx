@@ -197,7 +197,7 @@ export default function DashboardPage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-serif text-4xl font-semibold tracking-tight">
-            Dashboard
+            Today
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             Weather and outfit suggestions for your saved cities. Drag to
