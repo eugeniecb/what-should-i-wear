@@ -15,7 +15,7 @@ import {
   arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { City, SavedCity, UserPreferences } from "@/types";
+import { City, SavedCity, TemperatureUnit, UserPreferences } from "@/types";
 import CitySearch from "@/components/CitySearch";
 import SortableWeatherCard from "@/components/SortableWeatherCard";
 import { useSupabase } from "@/lib/useSupabase";
@@ -65,7 +65,7 @@ export default function DashboardPage() {
           .eq("owned", true),
         supabase
           .from("user_preferences")
-          .select("style, temp_sensitivity")
+          .select("style, temp_sensitivity, temperature_unit")
           .maybeSingle(),
       ]);
 
@@ -133,6 +133,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function setTemperatureUnit(unit: TemperatureUnit) {
+    if (!user || preferences.temperature_unit === unit) return;
+    const prev = preferences;
+    setPreferences({ ...preferences, temperature_unit: unit });
+    const { error } = await supabase.from("user_preferences").upsert(
+      {
+        user_id: user.id,
+        temperature_unit: unit,
+      },
+      { onConflict: "user_id" },
+    );
+    if (error) {
+      setError(error.message);
+      setPreferences(prev);
+    }
+  }
+
   async function removeCity(id: string) {
     const prev = cities;
     setCities((current) => current.filter((c) => c.id !== id));
@@ -177,14 +194,22 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8">
-      <header className="mb-8">
-        <h1 className="font-serif text-4xl font-semibold tracking-tight">
-          Dashboard
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Weather and outfit suggestions for your saved cities. Drag to
-          reorder.
-        </p>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-4xl font-semibold tracking-tight">
+            Dashboard
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Weather and outfit suggestions for your saved cities. Drag to
+            reorder.
+          </p>
+        </div>
+        {isSignedIn && (
+          <UnitToggle
+            unit={preferences.temperature_unit}
+            onChange={setTemperatureUnit}
+          />
+        )}
       </header>
 
       {isLoaded && !isSignedIn && (
@@ -240,6 +265,41 @@ export default function DashboardPage() {
           </DndContext>
         </>
       )}
+    </div>
+  );
+}
+
+function UnitToggle({
+  unit,
+  onChange,
+}: {
+  unit: TemperatureUnit;
+  onChange: (next: TemperatureUnit) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Temperature unit"
+      className="inline-flex overflow-hidden rounded-full border border-gray-300 bg-white text-xs font-medium shadow-sm dark:border-gray-700 dark:bg-gray-900"
+    >
+      {(["fahrenheit", "celsius"] as const).map((u) => {
+        const active = unit === u;
+        return (
+          <button
+            key={u}
+            type="button"
+            onClick={() => onChange(u)}
+            aria-pressed={active}
+            className={`px-3 py-1.5 transition ${
+              active
+                ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            }`}
+          >
+            °{u === "fahrenheit" ? "F" : "C"}
+          </button>
+        );
+      })}
     </div>
   );
 }

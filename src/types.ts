@@ -34,9 +34,12 @@ export type StylePreference =
 
 export type TempSensitivity = "runs_cold" | "normal" | "runs_warm";
 
+export type TemperatureUnit = "fahrenheit" | "celsius";
+
 export interface UserPreferences {
   style: StylePreference;
   temp_sensitivity: TempSensitivity;
+  temperature_unit: TemperatureUnit;
 }
 
 export interface WeatherData {

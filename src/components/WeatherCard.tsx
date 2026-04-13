@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { City, UserPreferences, WeatherData } from "@/types";
-import { getWeatherDescription } from "@/lib/weather-utils";
+import { formatTemp, getWeatherDescription } from "@/lib/weather-utils";
 import { styleLabel } from "@/lib/preferences";
 import {
   OutfitLineSlot,
@@ -156,7 +156,7 @@ export default function WeatherCard({
             <span className="text-4xl">{icon}</span>
             <div>
               <p className="text-3xl font-bold">
-                {Math.round(weather.temperature)}°F
+                {formatTemp(weather.temperature, preferences.temperature_unit)}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {label}
@@ -168,7 +168,10 @@ export default function WeatherCard({
             <div>
               Feels like{" "}
               <span className="font-medium text-gray-900 dark:text-gray-200">
-                {Math.round(weather.apparentTemperature)}°F
+                {formatTemp(
+                  weather.apparentTemperature,
+                  preferences.temperature_unit,
+                )}
               </span>
             </div>
             <div>
@@ -184,8 +187,14 @@ export default function WeatherCard({
               </span>
             </div>
             <div>
-              H: {Math.round(weather.daily.tempMax)}° L:{" "}
-              {Math.round(weather.daily.tempMin)}°
+              H:{" "}
+              {formatTemp(weather.daily.tempMax, preferences.temperature_unit, {
+                withUnit: false,
+              })}{" "}
+              L:{" "}
+              {formatTemp(weather.daily.tempMin, preferences.temperature_unit, {
+                withUnit: false,
+              })}
             </div>
           </div>
 

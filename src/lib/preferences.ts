@@ -1,4 +1,8 @@
-import type { StylePreference, TempSensitivity } from "@/types";
+import type {
+  StylePreference,
+  TempSensitivity,
+  TemperatureUnit,
+} from "@/types";
 
 export const STYLE_OPTIONS: { value: StylePreference; label: string }[] = [
   { value: "casual", label: "Casual" },
@@ -29,6 +33,7 @@ export const SENSITIVITY_OPTIONS: {
 export const DEFAULT_PREFERENCES = {
   style: "casual" as StylePreference,
   temp_sensitivity: "normal" as TempSensitivity,
+  temperature_unit: "fahrenheit" as TemperatureUnit,
 };
 
 export function styleLabel(style: StylePreference): string {

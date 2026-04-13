@@ -40,7 +40,7 @@ Outfit suggestions are fully client-side and rule-based — there is no LLM call
 - `src/lib/closet-catalog.ts` — Canonical catalog of clothing items with `warmth` (1–5), `rainOk`, `snowOk`, and allowed `styles`. The closet UI renders only catalog items; users cannot add custom items. Adding/removing items here changes the experience for all users.
 - `src/lib/outfit-engine.ts` — Pure `suggestOutfit()` function. Applies temp-sensitivity offset, picks one item per slot scored against a target warmth, filters by style and weather (rain/snow), and conditionally adds accessories (umbrella when rainy; gloves/scarf when freezing; +hat/beanie when freezing & windy; sunglasses or baseball cap when sunny & warm). Returns `{ lines, note, missing }` and gracefully handles unfillable slots by surfacing them in `note`.
 - `src/lib/preferences.ts` — Style + sensitivity option lists and defaults.
-- `src/lib/weather-utils.ts` — WMO code → label/icon map (`getWeatherDescription`).
+- `src/lib/weather-utils.ts` — WMO code → label/icon map (`getWeatherDescription`); also `formatTemp(fahrenheit, unit)` for °F↔°C display conversion. Storage and the outfit engine always work in Fahrenheit; conversion is display-only.
 
 ### Shared types (`src/types.ts`)
 
@@ -99,6 +99,7 @@ Unique `(user_id, category, name)`. Index on `(user_id, category)`. RLS scoped t
 | `user_id`          | `text` PK   | Clerk user ID                                                            |
 | `style`            | `text`      | check: `casual`/`business_casual`/`streetwear`/`athletic`/`formal`; default `casual` |
 | `temp_sensitivity` | `text`      | check: `runs_cold`/`normal`/`runs_warm`; default `normal`                |
+| `temperature_unit` | `text`      | check: `fahrenheit`/`celsius`; default `fahrenheit`                      |
 | `updated_at`       | `timestamptz` | trigger-maintained on update                                          |
 
 RLS with select/insert/update policies keyed on the Clerk `sub` claim.

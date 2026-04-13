@@ -1,3 +1,5 @@
+import type { TemperatureUnit } from "@/types";
+
 // WMO Weather interpretation codes → labels and emoji
 const weatherDescriptions: Record<number, { label: string; icon: string }> = {
   0: { label: "Clear sky", icon: "☀️" },
@@ -30,4 +32,24 @@ const weatherDescriptions: Record<number, { label: string; icon: string }> = {
 
 export function getWeatherDescription(code: number) {
   return weatherDescriptions[code] ?? { label: "Unknown", icon: "❓" };
+}
+
+/** Convert °F to the display unit. Storage / engine stays in °F. */
+export function toDisplayTemp(
+  fahrenheit: number,
+  unit: TemperatureUnit,
+): number {
+  return unit === "celsius" ? (fahrenheit - 32) * (5 / 9) : fahrenheit;
+}
+
+/** Format a Fahrenheit value for display. */
+export function formatTemp(
+  fahrenheit: number,
+  unit: TemperatureUnit,
+  options: { withUnit?: boolean } = {},
+): string {
+  const { withUnit = true } = options;
+  const v = Math.round(toDisplayTemp(fahrenheit, unit));
+  if (!withUnit) return `${v}°`;
+  return `${v}°${unit === "celsius" ? "C" : "F"}`;
 }
