@@ -41,12 +41,18 @@ const RAINY_CODES = new Set([51, 53, 55, 61, 63, 65, 66, 67, 80, 81, 82]);
 const SNOWY_CODES = new Set([71, 73, 75, 77, 85, 86]);
 const STORMY_CODES = new Set([95, 96, 99]);
 const SUNNY_CODES = new Set([0, 1]);
+const PARTLY_CLOUDY_CODES = new Set([2]);
+const OVERCAST_CODES = new Set([3]);
+const FOGGY_CODES = new Set([45, 48]);
 
 interface WeatherFlags {
   rainy: boolean;
   snowy: boolean;
   stormy: boolean;
   sunny: boolean;
+  partlyCloudy: boolean;
+  overcast: boolean;
+  foggy: boolean;
   windy: boolean;
 }
 
@@ -56,6 +62,9 @@ function weatherFlags(code: number, windSpeed: number): WeatherFlags {
     snowy: SNOWY_CODES.has(code),
     stormy: STORMY_CODES.has(code),
     sunny: SUNNY_CODES.has(code),
+    partlyCloudy: PARTLY_CLOUDY_CODES.has(code),
+    overcast: OVERCAST_CODES.has(code),
+    foggy: FOGGY_CODES.has(code),
     windy: windSpeed >= 12,
   };
 }
@@ -172,11 +181,62 @@ function weatherNote(
   perceived: number,
   flags: WeatherFlags,
 ): string | null {
+  // Severe / wet conditions take priority.
   if (flags.stormy) return "Watch for lightning — indoors is safer.";
-  if (flags.snowy) return "Insulate well and mind your footing.";
-  if (flags.rainy) return "Keep a waterproof layer on top. Stay dry.";
-  if (perceived < 32) return "Cover exposed skin — wind makes it worse.";
-  if (perceived >= 85) return "Loose, breathable fabrics win today.";
+  if (flags.snowy)
+    return flags.windy
+      ? "Snow plus wind — cover up and mind your footing."
+      : "Insulate well and mind your footing.";
+  if (flags.rainy)
+    return flags.windy
+      ? "Wind-driven rain — a hood beats an umbrella."
+      : "Keep a waterproof layer on top. Stay dry.";
+  if (flags.foggy)
+    return "Visibility is low — give yourself extra time getting around.";
+
+  // Temperature extremes.
+  if (perceived < 32)
+    return flags.windy
+      ? "Bitter cold with wind — cover exposed skin."
+      : "Freezing out — bundle up before stepping out.";
+  if (perceived >= 85)
+    return flags.windy
+      ? "Hot and breezy — loose, breathable fabrics win."
+      : "Heat is on — loose, breathable fabrics win today.";
+
+  // Mild range: lean on wind, then cloud cover, then temperature.
+  if (flags.windy) {
+    if (perceived < 50)
+      return "Cool and gusty — pick a layer that won't flap around.";
+    if (perceived < 70)
+      return "Breezy out — a wind-resistant top makes a difference.";
+    return "Warm but breezy — light layers you can shed if it dies down.";
+  }
+
+  if (flags.overcast) {
+    if (perceived < 45)
+      return "Gray and chilly — easy to underdress for this kind of day.";
+    if (perceived < 65)
+      return "Overcast and mild — flat light, no surprises.";
+    return "Warm and overcast — UV still gets through the clouds.";
+  }
+
+  if (flags.partlyCloudy) {
+    if (perceived < 50)
+      return "Sun in and out — it's noticeably cooler in the shade.";
+    if (perceived < 70)
+      return "Sun and clouds trading off — easy weather to dress for.";
+    return "Bright with passing clouds — pleasant if you're outside.";
+  }
+
+  if (flags.sunny) {
+    if (perceived < 50)
+      return "Crisp and clear — good walking weather, sunglasses help.";
+    if (perceived < 70)
+      return "Clear skies and pleasant — make time to be outside.";
+    return "Bright and warm — sunscreen and water in the bag.";
+  }
+
   return null;
 }
 
