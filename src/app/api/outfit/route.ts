@@ -83,7 +83,11 @@ export async function POST(req: Request) {
         contents: [{ role: "user", parts: [{ text: buildPrompt(body) }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 400,
+          maxOutputTokens: 800,
+          // gemini-flash-latest resolves to a 2.5 model with thinking on
+          // by default; thinking tokens count against maxOutputTokens and
+          // truncate the visible output. Disable for this short task.
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     });
