@@ -10,6 +10,34 @@ export interface SavedCity extends City {
   id: string;
 }
 
+export type ClothingCategory =
+  | "tops"
+  | "bottoms"
+  | "outerwear"
+  | "footwear"
+  | "accessories";
+
+export interface ClosetItem {
+  id: string;
+  category: ClothingCategory;
+  name: string;
+  owned: boolean;
+}
+
+export type StylePreference =
+  | "casual"
+  | "business_casual"
+  | "streetwear"
+  | "athletic"
+  | "formal";
+
+export type TempSensitivity = "runs_cold" | "normal" | "runs_warm";
+
+export interface UserPreferences {
+  style: StylePreference;
+  temp_sensitivity: TempSensitivity;
+}
+
 export interface WeatherData {
   city: City;
   temperature: number;

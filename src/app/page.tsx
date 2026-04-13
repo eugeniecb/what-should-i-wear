@@ -1,150 +1,79 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { City, SavedCity } from "@/types";
-import CitySearch from "@/components/CitySearch";
-import WeatherCard from "@/components/WeatherCard";
-import { useSupabase } from "@/lib/useSupabase";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
-export default function Home() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const supabase = useSupabase();
-
-  const [cities, setCities] = useState<SavedCity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function LandingPage() {
+  const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    let cancelled = false;
-
-    if (!isSignedIn) {
-      setCities([]);
-      setLoading(false);
-      return;
+    if (isLoaded && isSignedIn) {
+      router.replace("/dashboard");
     }
-
-    (async () => {
-      const { data, error } = await supabase
-        .from("saved_cities")
-        .select("id, name, country, admin1, latitude, longitude")
-        .order("created_at", { ascending: false });
-
-      if (cancelled) return;
-      if (error) {
-        setError(error.message);
-        setCities([]);
-      } else {
-        setError(null);
-        setCities(data ?? []);
-      }
-      setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, isSignedIn, supabase]);
-
-  async function addCity(city: City) {
-    if (!user) return;
-    if (
-      cities.some(
-        (c) => c.latitude === city.latitude && c.longitude === city.longitude,
-      )
-    ) {
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("saved_cities")
-      .insert({
-        user_id: user.id,
-        name: city.name,
-        country: city.country,
-        admin1: city.admin1 ?? null,
-        latitude: city.latitude,
-        longitude: city.longitude,
-      })
-      .select("id, name, country, admin1, latitude, longitude")
-      .single();
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    if (data) {
-      setCities((prev) => [data, ...prev]);
-    }
-  }
-
-  async function removeCity(id: string) {
-    const prev = cities;
-    setCities((current) => current.filter((c) => c.id !== id));
-    const { error } = await supabase.from("saved_cities").delete().eq("id", id);
-    if (error) {
-      setError(error.message);
-      setCities(prev);
-    }
-  }
+  }, [isLoaded, isSignedIn, router]);
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
-          What Should I Wear?
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Check the weather for your saved cities and get outfit suggestions
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+      <p className="mb-6 text-6xl">🌤️</p>
+      <h1 className="font-serif text-5xl font-semibold tracking-tight sm:text-6xl">
+        What should I wear?
+      </h1>
+      <p className="mt-5 max-w-xl text-lg text-gray-600 dark:text-gray-400">
+        Save the cities you care about, keep a digital closet of what you own,
+        and get a daily outfit suggestion tuned to the weather and your style.
+      </p>
 
-      {isLoaded && !isSignedIn && (
-        <div className="mt-12 text-center text-gray-500 dark:text-gray-400">
-          <p className="text-5xl">🔒</p>
-          <p className="mt-4 text-lg">Sign in to save cities</p>
-          <p className="mt-1 text-sm">
-            Your saved cities sync across your devices once you&apos;re signed
-            in.
-          </p>
-        </div>
-      )}
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+        <SignUpButton mode="modal">
+          <button className="rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
+            Get started
+          </button>
+        </SignUpButton>
+        <SignInButton mode="modal">
+          <button className="rounded-full border border-gray-300 px-6 py-3 text-sm font-medium text-gray-900 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-800">
+            Sign in
+          </button>
+        </SignInButton>
+      </div>
 
-      {isSignedIn && (
-        <>
-          <div className="mb-8 flex justify-center">
-            <CitySearch onAdd={addCity} />
-          </div>
+      <div className="mt-16 grid w-full gap-4 text-left sm:grid-cols-3">
+        <FeatureCard
+          emoji="🏙️"
+          title="Your cities"
+          body="Track weather in every place you live or travel to."
+        />
+        <FeatureCard
+          emoji="👕"
+          title="Your closet"
+          body="Tell us what you own; we only suggest items you actually have."
+        />
+        <FeatureCard
+          emoji="✨"
+          title="Your style"
+          body="Casual, business, streetwear — tuned to your personal vibe."
+        />
+      </div>
+    </div>
+  );
+}
 
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">
-              {error}
-            </div>
-          )}
-
-          {!loading && cities.length === 0 && !error && (
-            <div className="mt-12 text-center text-gray-500 dark:text-gray-400">
-              <p className="text-5xl">🌤️</p>
-              <p className="mt-4 text-lg">No cities saved yet</p>
-              <p className="mt-1 text-sm">
-                Search for a city above to get started
-              </p>
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {cities.map((city) => (
-              <WeatherCard
-                key={city.id}
-                city={city}
-                onRemove={() => removeCity(city.id)}
-              />
-            ))}
-          </div>
-        </>
-      )}
+function FeatureCard({
+  emoji,
+  title,
+  body,
+}: {
+  emoji: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <p className="text-2xl">{emoji}</p>
+      <h3 className="mt-2 font-serif text-lg font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{body}</p>
     </div>
   );
 }
