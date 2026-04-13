@@ -5,7 +5,11 @@ import Link from "next/link";
 import { City, UserPreferences, WeatherData } from "@/types";
 import { getWeatherDescription } from "@/lib/weather-utils";
 import { styleLabel } from "@/lib/preferences";
-import { suggestOutfit } from "@/lib/outfit-engine";
+import {
+  OutfitLineSlot,
+  OutfitResult,
+  suggestOutfit,
+} from "@/lib/outfit-engine";
 
 interface WeatherCardProps {
   city: City;
@@ -198,20 +202,27 @@ export default function WeatherCard({
   );
 }
 
+const SLOT_ICON: Record<OutfitLineSlot, string> = {
+  base: "👕",
+  outerwear: "🧥",
+  footwear: "👟",
+  accessories: "🧣",
+};
+
 function OutfitBlock({
   outfit,
   style,
   emptyCloset,
 }: {
-  outfit: { lines: string[]; note: string };
+  outfit: OutfitResult;
   style: string;
   emptyCloset: boolean;
 }) {
   if (emptyCloset) {
     return (
-      <div className="rounded-lg bg-white/70 px-3 py-2 text-sm text-gray-700 dark:bg-black/30 dark:text-gray-200">
+      <div className="rounded-xl bg-white/80 px-4 py-3 text-sm text-gray-700 ring-1 ring-black/5 dark:bg-black/40 dark:text-gray-200 dark:ring-white/10">
         👕 Add items to your{" "}
-        <Link href="/closet" className="underline underline-offset-2">
+        <Link href="/closet" className="font-medium underline underline-offset-2">
           closet
         </Link>{" "}
         to get an outfit suggestion.
@@ -220,17 +231,25 @@ function OutfitBlock({
   }
 
   return (
-    <div className="rounded-lg bg-white/70 px-3 py-3 text-sm text-gray-800 shadow-inner dark:bg-black/30 dark:text-gray-100">
-      <div className="mb-1 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        <span>👕</span>
-        <span>{style} outfit</span>
+    <div className="rounded-xl border-l-4 border-gray-900/80 bg-white/85 px-4 py-3.5 shadow-sm ring-1 ring-black/5 backdrop-blur-sm dark:border-white/70 dark:bg-black/40 dark:ring-white/10">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+        <span aria-hidden>✨</span>
+        <span>Today&apos;s {style} fit</span>
       </div>
-      <div className="space-y-0.5 leading-relaxed">
+      <ul className="space-y-1.5">
         {outfit.lines.map((line, i) => (
-          <p key={i}>{line}</p>
+          <li
+            key={i}
+            className="flex items-start gap-2.5 font-serif text-base leading-snug text-gray-900 dark:text-gray-50"
+          >
+            <span aria-hidden className="mt-0.5 text-base leading-none">
+              {SLOT_ICON[line.slot]}
+            </span>
+            <span>{line.text}</span>
+          </li>
         ))}
-      </div>
-      <p className="mt-2 text-xs italic text-gray-600 dark:text-gray-400">
+      </ul>
+      <p className="mt-2.5 border-t border-black/5 pt-2 text-xs italic text-gray-600 dark:border-white/10 dark:text-gray-400">
         {outfit.note}
       </p>
     </div>

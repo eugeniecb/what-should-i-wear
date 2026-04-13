@@ -18,8 +18,19 @@ export interface OutfitInput {
   ownedItemNames: string[];
 }
 
+export type OutfitLineSlot =
+  | "base"
+  | "outerwear"
+  | "footwear"
+  | "accessories";
+
+export interface OutfitLine {
+  slot: OutfitLineSlot;
+  text: string;
+}
+
 export interface OutfitResult {
-  lines: string[];
+  lines: OutfitLine[];
   note: string;
   missing: ClothingCategory[];
 }
@@ -209,34 +220,44 @@ export function suggestOutfit(input: OutfitInput): OutfitResult {
   }
 
   // Compose lines.
-  const lines: string[] = [];
+  const lines: OutfitLine[] = [];
   const missing: ClothingCategory[] = [];
 
   if (top && bottom) {
-    lines.push(`${capitalize(top.name)} with ${bottom.name}.`);
+    lines.push({
+      slot: "base",
+      text: `${capitalize(top.name)} with ${bottom.name}.`,
+    });
   } else {
     if (!top) missing.push("tops");
     if (!bottom) missing.push("bottoms");
-    if (top) lines.push(`${capitalize(top.name)}.`);
-    if (bottom) lines.push(`${capitalize(bottom.name)}.`);
+    if (top) lines.push({ slot: "base", text: `${capitalize(top.name)}.` });
+    if (bottom)
+      lines.push({ slot: "base", text: `${capitalize(bottom.name)}.` });
   }
 
   if (targets.needOuterwear) {
     if (outerwear) {
-      lines.push(`Layer a ${outerwear.name} on top.`);
+      lines.push({
+        slot: "outerwear",
+        text: `Layer a ${outerwear.name} on top.`,
+      });
     } else {
       missing.push("outerwear");
     }
   }
 
   if (footwear) {
-    lines.push(`${capitalize(footwear.name)}.`);
+    lines.push({ slot: "footwear", text: `${capitalize(footwear.name)}.` });
   } else {
     missing.push("footwear");
   }
 
   if (accessories.length > 0) {
-    lines.push(`Grab ${joinItems(accessories.map((a) => a.name))}.`);
+    lines.push({
+      slot: "accessories",
+      text: `Grab ${joinItems(accessories.map((a) => a.name))}.`,
+    });
   }
 
   // Note: flag missing slots first, then weather, then style.
